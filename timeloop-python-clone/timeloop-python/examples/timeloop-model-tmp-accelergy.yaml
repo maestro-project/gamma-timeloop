@@ -1,0 +1,60 @@
+architecture:
+  subtree:
+  - attributes:
+      technology: 40nm
+    local:
+    - attributes:
+        block-size: 8
+        depth: 32768
+        width: 64
+        word-bits: 8
+      class: SRAM
+      name: MainMemory
+    name: System
+    subtree:
+    - local:
+      - attributes:
+          block-size: 1
+          depth: 64
+          instances: 1
+          width: 8
+          word-bits: 8
+        class: regfile
+        name: Buffer
+      - attributes:
+          datawidth: 8
+        class: intmac
+        name: MACC
+      name: PE
+  version: 0.2
+architecture_constraints: {}
+mapping:
+- factors: R=3 P=1
+  permutation: RP
+  target: MainMemory
+  type: temporal
+- factors: R=1 P=16
+  permutation: PR
+  target: Buffer
+  type: temporal
+problem:
+  instance:
+    P: 16
+    R: 3
+  shape:
+    data-spaces:
+    - name: Weights
+      projection:
+      - - - R
+    - name: Inputs
+      projection:
+      - - - R
+        - - P
+    - name: Outputs
+      projection:
+      - - - P
+      read-write: true
+    dimensions:
+    - R
+    - P
+    name: Conv1D

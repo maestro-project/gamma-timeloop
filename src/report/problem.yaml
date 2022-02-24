@@ -1,0 +1,45 @@
+problem:
+  instance:
+    C: 144
+    M: 1
+    N: 16
+    P: 56
+    Q: 56
+    R: 3
+    S: 3
+    densities:
+      Weights:
+        density: 0.1
+        distribution: fixed-structured
+  shape:
+    data-spaces:
+    - name: Weights
+      projection:
+      - - - C
+      - - - R
+      - - - S
+      - - - M
+    - name: Inputs
+      projection:
+      - - - C
+      - - - N
+      - - - S
+        - - Q
+      - - - R
+        - - P
+    - name: Outputs
+      projection:
+      - - - N
+      - - - P
+      - - - Q
+      - - - M
+      read-write: true
+    dimensions:
+    - N
+    - C
+    - P
+    - Q
+    - R
+    - S
+    - M
+    name: Conv2D

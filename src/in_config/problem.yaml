@@ -1,0 +1,38 @@
+problem:
+  shape:
+    name: Conv2D
+    dimensions: [N, C, P, Q, R, S, M]
+    data-spaces:
+      - name: Weights
+        projection:
+          - [ [C] ]
+          - [ [R] ]
+          - [ [S] ]
+          - [ [M] ]
+      - name: Inputs
+        projection:
+          - [ [C] ]
+          - [ [N] ]
+          - [ [S], [Q] ]
+          - [ [R], [P] ]
+      - name: Outputs
+        projection:
+          - [ [N] ]
+          - [ [P] ]
+          - [ [Q] ]
+          - [ [M] ]
+        read-write: True
+
+  instance:
+    N: 16
+    C: 144
+    M: 1
+    N: 16
+    R: 3
+    S: 3
+    P: 56
+    Q: 56
+    densities:
+      Weights:
+        distribution: fixed-structured
+        density: 0.1

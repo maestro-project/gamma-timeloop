@@ -1,0 +1,9 @@
+[submodule "timeloop"]
+	path = lib/timeloop
+	url = https://github.com/NVlabs/timeloop.git
+[submodule "pybind11"]
+	path = lib/pybind11
+	url = https://github.com/pybind/pybind11.git
+[submodule "timeloop-accelergy-exercises"]
+	path = tests/timeloop-accelergy-exercises
+	url = https://github.com/Accelergy-Project/timeloop-accelergy-exercises.git

@@ -1,0 +1,293 @@
+ERT_summary:
+  version: 0.3
+  table_summary:
+  - name: eyeriss_like.PE[0..167].mac
+    actions:
+    - name: mac_random
+      energy: 2.2
+    - name: mac_reused
+      energy: 1.877
+    - name: mac_gated
+      energy: 0.103
+    - name: idle
+      energy: 0.066
+    primitive_estimation(s):
+    - name: eyeriss_like.PE[0..167].mac
+      estimator: Aladdin_table
+  - name: eyeriss_like.PE[0..167].ifmap_spad
+    actions:
+    - name: write
+      average_energy: 0.146
+      max_energy: 0.237
+      min_energy: 0.055
+    - name: read
+      average_energy: 0.146
+      max_energy: 0.237
+      min_energy: 0.055
+    - name: idle
+      energy: 0.018
+    primitive_estimation(s):
+    - name: storage
+      estimator: Aladdin_table
+    - name: address_generators[0]
+      estimator: Aladdin_table
+    - name: address_generators[1]
+      estimator: Aladdin_table
+    - name: address_generators[0..1]
+      estimator: Aladdin_table
+  - name: eyeriss_like.PE[0..167].weights_spad
+    actions:
+    - name: write
+      average_energy: 0.824
+      max_energy: 1.586
+      min_energy: 0.061
+    - name: read
+      average_energy: 0.824
+      max_energy: 1.586
+      min_energy: 0.061
+    - name: idle
+      energy: 0.024
+    primitive_estimation(s):
+    - name: storage
+      estimator: Aladdin_table
+    - name: address_generators[0]
+      estimator: Aladdin_table
+    - name: address_generators[1]
+      estimator: Aladdin_table
+    - name: address_generators[0..1]
+      estimator: Aladdin_table
+  - name: eyeriss_like.PE[0..167].psum_spad
+    actions:
+    - name: write
+      average_energy: 0.153
+      max_energy: 0.251
+      min_energy: 0.055
+    - name: read
+      average_energy: 0.153
+      max_energy: 0.251
+      min_energy: 0.055
+    - name: idle
+      energy: 0.018
+    primitive_estimation(s):
+    - name: storage
+      estimator: Aladdin_table
+    - name: address_generators[0]
+      estimator: Aladdin_table
+    - name: address_generators[1]
+      estimator: Aladdin_table
+    - name: address_generators[0..1]
+      estimator: Aladdin_table
+  - name: eyeriss_like.weights_glb
+    actions:
+    - name: write
+      average_energy: 5.695
+      max_energy: 11.34
+      min_energy: 0.049
+    - name: read
+      average_energy: 5.159
+      max_energy: 10.269
+      min_energy: 0.049
+    - name: idle
+      energy: 0.012
+    primitive_estimation(s):
+    - name: storage
+      estimator: Cacti
+    - name: address_generators[0]
+      estimator: Aladdin_table
+    - name: address_generators[1]
+      estimator: Aladdin_table
+    - name: address_generators[0..1]
+      estimator: Aladdin_table
+  - name: eyeriss_like.shared_glb
+    actions:
+    - name: write
+      average_energy: 34.403
+      max_energy: 68.751
+      min_energy: 0.054
+    - name: read
+      average_energy: 33.996
+      max_energy: 67.938
+      min_energy: 0.054
+    - name: idle
+      energy: 0.017
+    primitive_estimation(s):
+    - name: storage
+      estimator: Cacti
+    - name: address_generators[0]
+      estimator: Aladdin_table
+    - name: address_generators[1]
+      estimator: Aladdin_table
+    - name: address_generators[0..1]
+      estimator: Aladdin_table
+  - name: eyeriss_like.ifmap_NoC
+    actions:
+    - name: transfer_random
+      average_energy: 0.221
+      max_energy: 0.72
+      min_energy: 0.008
+    - name: transfer_repeated
+      average_energy: 0.221
+      max_energy: 0.72
+      min_energy: 0.008
+    - name: idle
+      energy: 0.0
+    primitive_estimation(s):
+    - name: Y_memory_controller[0..0]
+      estimator: Aladdin_table
+    - name: X_memory_controller[0]
+      estimator: Aladdin_table
+    - name: Y_X_wire
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..1]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..2]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..3]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..4]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..5]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..6]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..7]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..8]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..9]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..10]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..11]
+      estimator: Aladdin_table
+    - name: X_memory_controller[0..167]
+      estimator: Aladdin_table
+  - name: eyeriss_like.weights_NoC
+    actions:
+    - name: transfer_random
+      average_energy: 0.221
+      max_energy: 0.72
+      min_energy: 0.008
+    - name: transfer_repeated
+      average_energy: 0.221
+      max_energy: 0.72
+      min_energy: 0.008
+    - name: idle
+      energy: 0.0
+    primitive_estimation(s):
+    - name: Y_memory_controller[0..0]
+      estimator: Aladdin_table
+    - name: X_memory_controller[0]
+      estimator: Aladdin_table
+    - name: Y_X_wire
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..1]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..2]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..3]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..4]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..5]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..6]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..7]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..8]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..9]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..10]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..11]
+      estimator: Aladdin_table
+    - name: X_memory_controller[0..167]
+      estimator: Aladdin_table
+  - name: eyeriss_like.psum_write_NoC
+    actions:
+    - name: transfer_random
+      average_energy: 0.221
+      max_energy: 0.72
+      min_energy: 0.008
+    - name: transfer_repeated
+      average_energy: 0.221
+      max_energy: 0.72
+      min_energy: 0.008
+    - name: idle
+      energy: 0.0
+    primitive_estimation(s):
+    - name: Y_memory_controller[0..0]
+      estimator: Aladdin_table
+    - name: X_memory_controller[0]
+      estimator: Aladdin_table
+    - name: Y_X_wire
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..1]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..2]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..3]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..4]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..5]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..6]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..7]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..8]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..9]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..10]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..11]
+      estimator: Aladdin_table
+    - name: X_memory_controller[0..167]
+      estimator: Aladdin_table
+  - name: eyeriss_like.psum_read_NoC
+    actions:
+    - name: transfer_random
+      average_energy: 0.221
+      max_energy: 0.72
+      min_energy: 0.008
+    - name: transfer_repeated
+      average_energy: 0.221
+      max_energy: 0.72
+      min_energy: 0.008
+    - name: idle
+      energy: 0.0
+    primitive_estimation(s):
+    - name: Y_memory_controller[0..0]
+      estimator: Aladdin_table
+    - name: X_memory_controller[0]
+      estimator: Aladdin_table
+    - name: Y_X_wire
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..1]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..2]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..3]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..4]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..5]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..6]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..7]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..8]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..9]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..10]
+      estimator: Aladdin_table
+    - name: Y_memory_controller[0..11]
+      estimator: Aladdin_table
+    - name: X_memory_controller[0..167]
+      estimator: Aladdin_table
