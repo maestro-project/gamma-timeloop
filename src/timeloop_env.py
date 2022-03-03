@@ -11,16 +11,18 @@ from pytimeloop import ConfigDict
 from utils import *
 import re
 class TimeloopEnv(object):
-    def __init__(self, config_path='./out_config', in_config_dir= './in_config', debug=False, use_sparse=False, density=None):
+    def __init__(self, config_path='./out_config', in_arch_file='./in_config/arch.yaml', in_problem_file='./in_config/problem.yaml',
+                 in_sparse_file='./in_config/sprase.yaml',
+                debug=False, use_sparse=False, density=None):
 
         self.config_path = config_path
         self.use_sparse = use_sparse
-        with open(os.path.join(in_config_dir, 'arch.yaml'), 'r') as fd:
+        with open(in_arch_file, 'r') as fd:
             self.arch = yaml.load(fd, Loader = yaml.SafeLoader)
-        with open(os.path.join(in_config_dir, 'problem.yaml'), 'r') as fd:
+        with open(in_problem_file, 'r') as fd:
             self.problem = yaml.load(fd,Loader = yaml.SafeLoader)
         if self.use_sparse:
-            with open(os.path.join(in_config_dir, 'sparse.yaml'), 'r') as fd:
+            with open(in_sparse_file, 'r') as fd:
                 self.sparse = yaml.load(fd,Loader = yaml.SafeLoader)
 
         buffer_name_list, buffer_size_list, buffer_spmap_cstr, user_specified_spmaps, num_buffer_levels, num_pes = self.get_buffer_info()
@@ -33,16 +35,8 @@ class TimeloopEnv(object):
         self.num_pes = num_pes
         self._executable = 'timeloop-model'
         self.debug = debug
-        self.buf_energy_cost = self.get_default_buffer_energy_cost()
         self.density = density
 
-    def get_default_buffer_energy_cost(self):
-        buf_energy_cost = {'DRAM': 200,
-                           'l2': 2.2,
-                           'l1': 1.12,
-                           'MAC': 1.0,
-        }
-        return buf_energy_cost
 
     def get_num_buffer_levels(self):
         return self.num_buffer_level
@@ -233,29 +227,6 @@ class TimeloopEnv(object):
         input_tile, weight_tile, output_tile = N*(Y+R-1)*(X+S-1)*C, K*R*S*C, Y*X*K*N
         return input_tile, weight_tile, output_tile
 
-    def get_ideal_perf(self, dimension):
-        N, K, C, Y, X, R, S = dimension
-        input_size, weight_size, output_size = [N*Y*X*C, R*S*C*K, N*Y*X*K] # Input, weight, output
-        num_flops = N*R*S*C*Y*X*K
-        energys = {}
-        for level in range(1, self.num_buffer_level+1):
-            if level == 1:
-                buf_energy_cost = self.buf_energy_cost['l1']
-            elif level == self.num_buffer_level:
-                buf_energy_cost = self.buf_energy_cost['DRAM']
-            else:
-                buf_energy_cost = self.buf_energy_cost['l2']
-            energys[f'l{level}-Inputs'] = input_size * buf_energy_cost
-            energys[f'l{level}-Weights'] = weight_size * buf_energy_cost
-            energys[f'l{level}-Outputs'] = output_size * buf_energy_cost
-        energys['compute'] = num_flops * self.buf_energy_cost['MAC']
-        energy = sum(e for e in energys.values()) * 1e-6  # energy_uJ
-        # cycles = num_flops/self.num_pes
-        cycles = num_flops/(self.num_pes-1)
-        edp = cycles * energy
-        return edp, cycles, energy
-
-
     def check_tile_fit_buffer(self, indv):
         len_dim = len('NKCYXRS')
         tile_prods = {}
@@ -294,27 +265,6 @@ class TimeloopEnv(object):
                                 'Weights': weight_tile,
                                 'Outputs':output_tile,
                                 'Total':total_tile}
-        return ret
-
-
-    def check_tile_fit_buffer_temp(self, indv):
-        len_dim = len('NKCYXRS')
-        tile_prods = {}
-        tile_prod = np.ones((len_dim,))
-        for level in range(1, self.num_buffer_level+1):
-            tile_sizes = {dim_note:self.get_prod(values) for dim_note, values in indv[f'l{level}']['tile_size'].items()}
-            par_dims = indv[f'l{level}']['par_dims']
-            tp_tile_sizes, sp_tile_sizes = self.get_tp_sp_tile_size(tile_sizes, par_dims, timeloop_notation=False)
-            tile_prod = (tile_prod * tp_tile_sizes * sp_tile_sizes)
-            tile_prods[f'l{level}'] = tile_prod
-        ret = {}
-        for level in range(1, self.num_buffer_level+1):
-            input_tile, weight_tile, output_tile = self.get_input_weight_output_tile(tile_prods[f'l{level}'])
-            total_tile = 0
-            total_tile += input_tile if indv[f'l{level}']['bypass']['Inputs'] is False else 0
-            total_tile += weight_tile if indv[f'l{level}']['bypass']['Weights'] is False else 0
-            total_tile += output_tile if indv[f'l{level}']['bypass']['Outputs'] is False else 0
-            ret[f'l{level}'] = total_tile
         return ret
 
 

@@ -91,9 +91,11 @@ Run GAMMA-Timeloop with multi-objective
 ### Parameter
 We support naive multi-objective optimization, where the user can specify up to three different objectives. If the user want single-objective optimization, simply don't specify fitness2 and fitness3.
 * fitness1: The fitness objective 
-* fitness2: The second objective 
-* fitness3: The third objective
-* config_path: Configuration path, should include arch.yaml (architecture file) and problem.yaml (problem file)
+* fitness2: (Optional) The second objective 
+* fitness3: (Optional) The third objective
+* arch_path: Architecture configuration path, e.g., arch.yaml
+* problem_path: Problem configuration path, e.g., problem.yaml
+* sparse_path: (Optional) Sparse configuration path, e.g., sparse.yaml
 * epochs: Number of generations
 * num_pops: Number of populations
 * save_chkpt: To save the trace of improvement over epoch or not. Specify if the user want to save the trace.

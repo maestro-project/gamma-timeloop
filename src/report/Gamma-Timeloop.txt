@@ -1,1 +1,1 @@
-Achieved Fitness: ['-3.67723e+10', '-8.12851e+06', '-4.52386e+03']
+Achieved Fitness: ['-2.10189e+04']

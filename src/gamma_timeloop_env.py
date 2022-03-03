@@ -22,9 +22,10 @@ import pickle
 from datetime import datetime
 
 class GammaTimeloopEnv(object):
-    def __init__(self, in_config_dir='./in_config', fitness_obj=['latency'], report_dir='./report',
+    def __init__(self, in_arch_file='./in_config/arch.yaml', in_problem_file='./in_config/problem.yaml', in_sparse_file=None,
+                 fitness_obj=['latency'], report_dir='./report',
                  use_pool=True, disable_pytimeloop=False, log_level=0, debug=False, init_random_tile=False, to_par_RS=False,
-                 save_chkpt=False, use_sparse=False, density=None,  emulate_random=False):
+                 save_chkpt=False, density=None,  emulate_random=False):
         self.debug = bool(debug)
         self.fitness_obj = fitness_obj
         self.dim_note = ['N', 'K', 'C', 'Y', 'X', 'R', 'S']
@@ -33,9 +34,10 @@ class GammaTimeloopEnv(object):
         self.len_dimension = len(self.dim_note)
         self.timeloop_configfile_path = f'/tmp/out_config_{datetime.now().strftime("%H:%M:%S")}'
         self.report_dir = report_dir
-        self.use_sparse = use_sparse
+        self.use_sparse = (in_sparse_file is not None)
         self.density = self.get_default_density() if density is None else density
-        self.timeloop_env = TimeloopEnv(config_path=self.timeloop_configfile_path, in_config_dir=in_config_dir, debug=self.debug,
+        self.timeloop_env = TimeloopEnv(config_path=self.timeloop_configfile_path, in_arch_file=in_arch_file,
+                                        in_problem_file=in_problem_file, in_sparse_file=in_sparse_file, debug=self.debug,
                                             use_sparse=self.use_sparse, density=self.density)
         self.num_buf_levels = self.timeloop_env.get_num_buffer_levels()
         print(f'Number of buffer levels: {self.num_buf_levels}')
@@ -68,7 +70,6 @@ class GammaTimeloopEnv(object):
             self.dimension_dict = self.get_dimension_dict(dimension)
         self.dimension_factor = self.get_dimension_factors(self.dimension_dict)
         self.dimension_prime =  {key: self.get_prime_factors(self.dimension_dict[key]) for key in self.dim_note}
-        self.idealperf['edp'], self.idealperf['latency'], self.idealperf['energy'] = self.timeloop_env.get_ideal_perf(self.dimension)
         self.fitness_record = []
         self.all_fitness_record = []
         self.sol_record = []
@@ -427,9 +428,7 @@ class GammaTimeloopEnv(object):
             fd.write(f'Achieved Fitness: {value}\n')
             # fd.write(f'Achieved NormFitness: {self.get_norm_fitness(fitness)}')
 
-    def get_norm_fitness(self, fit_value):
-        norm_fitness = [abs(v/self.idealperf[self.fitness_obj[i]]) for i, v in enumerate(fit_value)]
-        return [f"{n:.1f}" for n in norm_fitness]
+
 
     def run(self, dimension=None, num_pops=100, num_gens=100, elite_ratio=0.05, parents_ratio=0.5, inject_ratio=0.1):
         self.set_dimension(dimension)
