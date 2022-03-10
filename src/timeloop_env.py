@@ -174,7 +174,7 @@ class TimeloopEnv(object):
             cfg.update(map)
             cfg.update(problem)
             if self.use_sparse:
-                cfg.update({'sparse_optimizations': self.sparse})
+                cfg.update(self.sparse)
             config = ConfigDict(cfg)
             with stdout_redirected():
                 timeloop_app = Model(config, self.config_path)
