@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # GAMMA-TimeLoop #
 This is the implementation of the mapper [GAMMA](https://dl.acm.org/doi/10.1145/3400302.3415639) for Timeloop.
 ![GAMMA Framework](./gamma.jpg)
