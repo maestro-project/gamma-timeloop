@@ -8,8 +8,8 @@ problem:
     R: 3
     S: 3
     densities:
-      Weights:
-        density: 0.1
+      Inputs:
+        density: 0.5
         distribution: fixed-structured
   shape:
     data-spaces:

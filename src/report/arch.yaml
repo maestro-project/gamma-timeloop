@@ -2,9 +2,9 @@ architecture:
   subtree:
   - local:
     - attributes:
-        block-size: 32
-        width: 256
-        word-bits: 8
+        block-size: 4
+        width: 64
+        word-bits: 16
       class: DRAM
       name: MainMemory
     name: System
@@ -13,37 +13,31 @@ architecture:
         technology: 40nm
       local:
       - attributes:
-          block-size: 32
+          block-size: 4
           depth: 16384
-          width: 256
-          word-bits: 8
+          metadata_datawidth: 4
+          metadata_storage_depth: 655360
+          metadata_storage_width: 4
+          width: 64
+          word-bits: 16
         class: SRAM
-        name: L3[0..1]
+        name: GlobalBuffer
       name: Chip
       subtree:
-      - attributes:
-          technology: 40nm
-        local:
+      - local:
         - attributes:
-            block-size: 32
-            depth: 16384
-            width: 256
-            word-bits: 8
+            block-size: 1
+            depth: 256
+            metadata_datawidth: 4
+            metadata_storage_depth: 327680
+            metadata_storage_width: 4
+            width: 16
+            word-bits: 16
           class: SRAM
-          name: GlobalBuffer[0..3]
-        name: Chip
-        subtree:
-        - local:
-          - attributes:
-              block-size: 1
-              depth: 16384
-              width: 8
-              word-bits: 8
-            class: regfile
-            name: RegisterFile[0..63]
-          - attributes:
-              datawidth: 8
-            class: intmac
-            name: MACC[0..127]
-          name: PE
+          name: RegisterFile[0..255]
+        - attributes:
+            datawidth: 16
+          class: intmac
+          name: MACC[0..1023]
+        name: PEarrray
   version: 0.2

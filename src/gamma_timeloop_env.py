@@ -1,6 +1,3 @@
-'''
-V2 use Timeloop representation and is not compatible to MAESTRO
-'''
 import numpy as np
 import yaml
 import os, sys
@@ -20,12 +17,12 @@ import re
 import glob
 import pickle
 from datetime import datetime
+import pandas as pd
 
 class GammaTimeloopEnv(object):
-    def __init__(self, in_arch_file='./in_config/arch.yaml', in_problem_file='./in_config/problem.yaml', in_sparse_file=None,
-                 fitness_obj=['latency'], report_dir='./report',
-                 use_pool=True, disable_pytimeloop=False, log_level=0, debug=False, init_random_tile=False, to_par_RS=False,
-                 save_chkpt=False, density=None,  emulate_random=False):
+    def __init__(self, in_config_dir='./in_config', fitness_obj=['latency'], report_dir='./report',
+                 use_pool=True, use_IO=True, log_level=0, debug=False, init_random_tile=False, to_par_RS=False,
+                 save_chkpt=False, use_sparse=True, density=None, explore_bypass=False, emulate_random=False):
         self.debug = bool(debug)
         self.fitness_obj = fitness_obj
         self.dim_note = ['N', 'K', 'C', 'Y', 'X', 'R', 'S']
@@ -33,18 +30,19 @@ class GammaTimeloopEnv(object):
         self.parallizable_dim_note_set = set(self.parallizable_dim_note)
         self.len_dimension = len(self.dim_note)
         self.timeloop_configfile_path = f'/tmp/out_config_{datetime.now().strftime("%H:%M:%S")}'
+        # self.timeloop_configfile_path = f'./out_config'
         self.report_dir = report_dir
-        self.use_sparse = (in_sparse_file is not None)
+        self.use_sparse = use_sparse
+        self.explore_bypass = explore_bypass
         self.density = self.get_default_density() if density is None else density
-        self.timeloop_env = TimeloopEnv(config_path=self.timeloop_configfile_path, in_arch_file=in_arch_file,
-                                        in_problem_file=in_problem_file, in_sparse_file=in_sparse_file, debug=self.debug,
+        self.timeloop_env = TimeloopEnv(config_path=self.timeloop_configfile_path, in_config_dir=in_config_dir, debug=self.debug,
                                             use_sparse=self.use_sparse, density=self.density)
         self.num_buf_levels = self.timeloop_env.get_num_buffer_levels()
         print(f'Number of buffer levels: {self.num_buf_levels}')
         self.buf_spmap_cstr = self.timeloop_env.get_buffer_spmap_cstr()
         self.buffers_with_spmap = list(self.timeloop_env.get_buffers_with_spmap())
         self.use_pool = bool(use_pool)
-        self.use_IO = bool(disable_pytimeloop)
+        self.use_IO = bool(use_IO)
         self.log_level = log_level
         self.init_random_tile = bool(init_random_tile)
         self.idealperf = {}
@@ -70,6 +68,8 @@ class GammaTimeloopEnv(object):
             self.dimension_dict = self.get_dimension_dict(dimension)
         self.dimension_factor = self.get_dimension_factors(self.dimension_dict)
         self.dimension_prime =  {key: self.get_prime_factors(self.dimension_dict[key]) for key in self.dim_note}
+        self.idealperf['edp'], self.idealperf['latency'], self.idealperf['energy'] = self.timeloop_env.get_ideal_perf(self.dimension)
+        self.idealperf['utilization'] = 1
         self.fitness_record = []
         self.all_fitness_record = []
         self.sol_record = []
@@ -77,7 +77,6 @@ class GammaTimeloopEnv(object):
 
     def get_dimension_dict(self, dim_value):
         return {note: value for note, value in zip(self.dim_note, dim_value)}
-
 
     def get_prime_factors(self, n):
         primes = defaultdict(int)
@@ -141,7 +140,6 @@ class GammaTimeloopEnv(object):
                     indv[level]['tile_size'][pick_dim] = random_tiles[level][pick_dim]
         return indv
 
-
     def mutate_bypass(self, indv, alpha=0.5, beta=1.0):
         if random.random() < alpha:
             pick_level = np.random.choice(np.arange(1, self.num_buf_levels))
@@ -172,9 +170,11 @@ class GammaTimeloopEnv(object):
     def mutate_thread(self, indv, alpha=0.5, beta=0, gen=1):
         indv = self.mutate_order(indv)
         indv = self.mutate_par(indv)
-        indv = self.mutate_bypass(indv)
+        if self.explore_bypass:
+            indv = self.mutate_bypass(indv)
         indv = self.mutate_level(indv)
         indv = self.mutate_tiles(indv)
+
         indv = self.update_tile_for_buf_cstr(indv, max_trial=None)
         indv = self.update_for_spmap_cstr(indv)
         return indv
@@ -184,7 +184,8 @@ class GammaTimeloopEnv(object):
             indv = pops[i]
             indv = self.mutate_order(indv, alpha=0.1)
             indv = self.mutate_par(indv, alpha=0.1)
-            indv = self.mutate_bypass(indv, alpha=alpha)
+            if self.explore_bypass:
+                indv = self.mutate_bypass(indv, alpha=alpha)
             indv = self.mutate_level(indv, alpha=alpha)
             indv = self.mutate_tiles(indv, alpha=1,  gen=gen)
             indv = self.update_tile_for_buf_cstr(indv)
@@ -223,6 +224,8 @@ class GammaTimeloopEnv(object):
                 if random.random() < alpha:
                     length = min(len(dad), len(mom))
                     change_item = np.random.choice(['tile_size', 'loop_order', 'par_dims', 'bypass'])
+                    # change_item = np.random.choice(['tile_size', 'loop_order',  'bypass'])
+                    # change_item = 'tile_size'
                     pick_dim = np.random.choice(['K', 'C', 'Y', 'X'])
                     for l in range(1, length+1):
                         level = f'l{l}'
@@ -249,7 +252,6 @@ class GammaTimeloopEnv(object):
             par_dims = indv[f'l{level}']['par_dims']
             tile_sizes = OrderedDict({key: indv[f'l{level}']['tile_size'][key] for key in par_dims})
             num_pars = [self.get_prod(v) for v in tile_sizes.values()]
-
             idx = 0
             for key, value in tile_sizes.items():
                 if np.prod(num_pars) > self.buf_spmap_cstr[f'l{level}']:
@@ -269,8 +271,6 @@ class GammaTimeloopEnv(object):
                 indv[f'l{self.num_buf_levels}']['par_dims'].remove(key) if key in indv[f'l{self.num_buf_levels}']['par_dims'] else None
         return indv
 
-
-
     def init_random_tile_size(self, dims='NKCYXRS'):
         tile_hierachy = {f'l{level}': {k:defaultdict(int) for k in dims} for level in range(1, 1+self.num_buf_levels)}
         for key in dims:
@@ -285,7 +285,7 @@ class GammaTimeloopEnv(object):
         genome = { 'tile_size': {key: defaultdict(int) for key in 'NKCYXRS'},
                    'loop_order': "".join(np.random.permutation(['N', 'K', 'C', 'Y', 'X', 'R', 'S'])),
                    'par_dims': set(np.random.choice(self.parallizable_dim_note, random.randint(1, len(self.parallizable_dim_note)), replace=False)) if f'l{buffer_level}' in self.buffers_with_spmap else set(),
-                   'bypass':{'Inputs':random.choice([True, False]), 'Weights': random.choice([True, False]), 'Outputs': random.choice([True, False])},
+                   'bypass':{'Inputs':random.choice([True, False]), 'Weights': random.choice([True, False]), 'Outputs': random.choice([True, False])} if self.explore_bypass else {'Inputs':False, 'Weights': False, 'Outputs': False},
                    }
         if buffer_level==self.num_buf_levels:
             genome = { 'tile_size':{key: defaultdict(int) for key in 'NKCYXRS'},
@@ -357,9 +357,6 @@ class GammaTimeloopEnv(object):
                 return ret
         return ret
 
-
-
-
     def select_parents(self, pops, fitness, num_parents, num_elites, num_pops, use_soft_margin=False, use_pareto=True):
         if use_pareto:
             parereto_masks, num_paretros = is_pareto(fitness, return_mask=True)
@@ -382,12 +379,12 @@ class GammaTimeloopEnv(object):
         elites_fitness = copy.deepcopy(new_fitness[:num_elites])
         return new_pop, new_fitness, parents, elites, elites_fitness, num_parents, num_elites
 
-    def thread_fun(self, args, do_mutate=True):
+    def thread_fun(self, args, do_mutate=True, fitness_obj=None):
         indv, pool_idx = args
         if do_mutate:
             indv = self.mutate_thread(indv, alpha=self.alpha, beta=self.beta, gen=self.gen)
         fit = self.timeloop_env.run_timeloop( self.dimension, indv, pool_idx=pool_idx, use_IO=self.use_IO,
-                                              fitness_obj=self.fitness_obj)
+                                              fitness_obj=fitness_obj if fitness_obj is not None else self.fitness_obj)
         if do_mutate:
             return indv, fit
         else:
@@ -418,7 +415,9 @@ class GammaTimeloopEnv(object):
 
     def create_timeloop_report(self, indv, dir_path='./report'):
         fitness = self.thread_fun((indv, 0), do_mutate=False)
+        stats = self.thread_fun((indv, 0), do_mutate=False, fitness_obj='all')
         os.makedirs(dir_path, exist_ok=True)
+        columns = ['EDP (uJ cycles)', 'Cycles', 'Energy (uJ)', 'Utilization', 'pJ/Algorithm-Compute', 'pJ/Actual-Compute', 'Area (mm2)'][:len(stats)]
         if self.use_IO is False:
             self.timeloop_env.dump_timeloop_config_files(self.dimension, indv, dir_path)
         else:
@@ -426,9 +425,12 @@ class GammaTimeloopEnv(object):
         with open(os.path.join(dir_path,'Gamma-Timeloop.txt'), 'w') as fd:
             value = [f'{v:.5e}' for v in fitness]
             fd.write(f'Achieved Fitness: {value}\n')
-            # fd.write(f'Achieved NormFitness: {self.get_norm_fitness(fitness)}')
-
-
+            fd.write(f'Statistics\n')
+            fd.write(f'{columns}\n')
+            fd.write(f'{stats}')
+        stats = np.array(stats).reshape(1, -1)
+        df = pd.DataFrame(stats, columns=columns)
+        df.to_csv(os.path.join(dir_path,'Gamma-Timeloop.csv'))
 
     def run(self, dimension=None, num_pops=100, num_gens=100, elite_ratio=0.05, parents_ratio=0.5, inject_ratio=0.1):
         self.set_dimension(dimension)
@@ -442,7 +444,6 @@ class GammaTimeloopEnv(object):
         else:
             pool = None
             self.timeloop_env.create_pool_env(num_pools=1,  dimension=self.dimension, indv=pops[0],  use_IO=self.use_IO)
-
         for g in range(num_gens):
             if self.emulate_random:
                 pops, fitness = self.init_pops(num_pops, random=True)
@@ -456,22 +457,18 @@ class GammaTimeloopEnv(object):
             self.beta = 0.5
             self.gen = g
             pops = self.crossover(pops, parents=parents, num_injects=num_injects, alpha=alpha)
-
             pool, fitness, pops = self.evaluate(pops, fitness, pool, num_pops)
             pops = elites + pops
             fitness = np.concatenate((elites_fitness, fitness), axis=0)
-
             pops, fitness, parents, elites, elites_fitness, num_parents, num_elites = self.select_parents(pops, fitness, num_parents, num_elites, num_pops)
-            if g > 30:
-                a=1
             best_idx = 0
             best_sol = pops[best_idx]
             print(f'[Gen{g}] fitness: {fitness[best_idx]}')
             self.record_chkpt(pops, fitness, best_idx, g, num_gens, num_pops)
+            # print(f'[Gen{g}] fitness: {fitness[best_idx]} Sol: {self.get_genome(best_sol)}')
         print(f'Achieved Fitness: {fitness[best_idx]}')
         self.create_timeloop_report(best_sol, dir_path=self.report_dir)
         self.clean_timeloop_output_files()
-
 
     def record_chkpt(self, pops, fitness, best_idx, gen, num_gens, num_pops):
         if self.save_chkpt:
@@ -480,7 +477,7 @@ class GammaTimeloopEnv(object):
             self.fitness_record.append(copy.deepcopy(fitness[best_idx]))
             self.sol_record.append(copy.deepcopy(pops[best_idx]))
             cur_gen = gen+1
-            if cur_gen == num_gens:
+            if cur_gen == num_gens or cur_gen%50==0:
                 with open(os.path.join(self.report_dir, 'gamma_chkpt.plt'), 'wb') as fd:
                     chkpt = {
                              'fitness_record': self.fitness_record,
@@ -488,11 +485,21 @@ class GammaTimeloopEnv(object):
                              'all_sol_record':self.all_sol_record,
                              'sol_record':self.sol_record,
                              'best_fitness': self.fitness_record[-1],
-                             # 'norm_best_fitness': self.get_norm_fitness(self.fitness_record[-1]),
                              'num_gens': num_gens,
                              'num_pops': num_pops,
                              'sampled_points': num_gens * num_pops}
                     pickle.dump(chkpt, fd)
+
+    def get_genome(self, indv):
+        l2_tile_size, l1_tile_size = indv['l2_tile_size'], indv['l1_tile_size']
+        l2_loop_order, l1_loop_order = indv['l2_loop_order'],indv['l1_loop_order']
+        l2_par, l1_par = indv['par_dims']
+        l2_tile_dict = self.get_dimension_dict(l2_tile_size)
+        l1_tile_dict = self.get_dimension_dict(l1_tile_size)
+        genome_l2 = [[l2_par, self.num_pes]] + [[d, l2_tile_dict[d]] for d in l2_loop_order]
+        genome_l1 = [[l1_par, 1]] + [[d, l1_tile_dict[d]] for d in l1_loop_order]
+        genome = genome_l2 + genome_l1
+        return genome
 
     def clean_timeloop_output_files(self):
         shutil.rmtree(self.timeloop_configfile_path)

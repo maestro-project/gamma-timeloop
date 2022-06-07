@@ -11,6 +11,7 @@ import xml.etree.ElementTree as ET
 
 # Output file names.
 out_prefix = "timeloop-model."
+report_prefix = out_prefix + 'stats.txt'
 xml_file_name = out_prefix + "map+stats.xml"
 
 def set_out_prefix(new_out_prefix):
@@ -24,11 +25,11 @@ def get_stat(stats, stat, cast):
     out = np.array([0]*count, dtype=cast)
     for j in range(count):
         if stat == 'ingresses':
-            value = sum([cast(i.text) for i in items[j].findall('item')])       
+            value = sum([cast(i.text) for i in items[j].findall('item')])
         else:
             value = cast(items[j].text)
         out[j] = value
-    return out 
+    return out
 
 def parse_timeloop_stats(filename):
     if (os.path.isdir(filename)):
@@ -43,15 +44,15 @@ def parse_timeloop_stats(filename):
     macs = np.prod(problem)
 
     topology = root.findall('engine')[0].findall('topology_')[0]
-    
+
     # Get the list of storage/arithmetic levels
     levels = topology.findall('levels_')[0]
-    num_levels = int(levels.findall('count')[0].text)    
+    num_levels = int(levels.findall('count')[0].text)
     level_ptrs = levels.findall('item')
 
     # Get the list of networks
     networks = topology.findall('networks_')[0]
-    num_networks = int(networks.findall('count')[0].text)    
+    num_networks = int(networks.findall('count')[0].text)
     network_ptrs = networks.findall('item')
 
     # Initialize a dictionary that stores energy breakdown and other statistics
@@ -59,6 +60,9 @@ def parse_timeloop_stats(filename):
 
     arithmetic_level_found = False
 
+    # felix=================
+    cycles = 0
+    # =========================
     for level_id in range(len(level_ptrs)):
 
         level_ptr = level_ptrs[level_id]
@@ -69,26 +73,39 @@ def parse_timeloop_stats(filename):
         # only the first object of each type gets a full class_id descriptor.
         # For example, the first model::BufferLevel item will get:
         #    <px class_id="9" class_name="model::BufferLevel" tracking_level="1" version="0" object_id="_1">
-        # but subsequent levels will get something like: 
+        # but subsequent levels will get something like:
 	#     <px class_id_reference="9" object_id="_2">
         # with increasing object_ids. We can keep a table of new class_ids as
         # we encounter them, but for now we'll just hack something that works.
-        
+
+
+        # felix 2022/03/08=================================
+        try:
+            cycles_cand = int(level.findall('stats_')[0].findall('cycles')[0].text)
+            cycles =max(cycles, cycles_cand)
+        except:
+            pass
+
+        # =====================================================
+
+
         # Is this the Arithmetic level (the only one)?
         if 'class_id' in level.attrib and level.attrib['class_name'] == "model::ArithmeticUnits":
             assert arithmetic_level_found == False
             arithmetic_level_found = True
-            cycles = int(level.findall('cycles_')[0].text)       
-            utilized_instances = float(level.findall('utilized_instances_')[0].text)       
+            # felix 2022/03/08=================================
+            # cycles = int(level.findall('cycles_')[0].text)
+            # ================================================
+            utilized_instances = float(level.findall('utilized_instances_')[0].text)
             total_instances_list = level.findall('specs_')[0].findall('instances')[0].findall('t_')
             if total_instances_list == []: # this happens when no mapping is returned by timeloop
                 total_instances = 1 # dummy value
             else:
-                total_instances = float(level.findall('specs_')[0].findall('instances')[0].findall('t_')[0].text)    
+                total_instances = float(level.findall('specs_')[0].findall('instances')[0].findall('t_')[0].text)
             arithmetic_utilization = utilized_instances/total_instances
-            energy_breakdown_pJ['MAC'] = {'energy': float(level.findall('energy_')[0].text), 'utilization': arithmetic_utilization}       
+            energy_breakdown_pJ['MAC'] = {'energy': float(level.findall('energy_')[0].text), 'utilization': arithmetic_utilization}
             continue
-          
+
         # If we are here, we are not an arithmetic level.
 
         # Level specifications and stats.
@@ -99,17 +116,17 @@ def parse_timeloop_stats(filename):
         level_name = generic_level_specs.findall('level_name')[0].text
 
         # Storage access energy
-        reads_per_instance = get_stat(stats, 'reads', int)   
-        updates_per_instance = get_stat(stats, 'updates', int)   
-        fills_per_instance = get_stat(stats, 'fills', int)   
+        reads_per_instance = get_stat(stats, 'reads', int)
+        updates_per_instance = get_stat(stats, 'updates', int)
+        fills_per_instance = get_stat(stats, 'fills', int)
         accesses_per_instance = reads_per_instance + updates_per_instance + fills_per_instance
-        
+
         utilized_capacity = get_stat(stats, 'utilized_capacity', int)
-        instances = get_stat(stats, 'utilized_instances', int) 
-        clusters = get_stat(stats, 'utilized_clusters', int)   
+        instances = get_stat(stats, 'utilized_instances', int)
+        clusters = get_stat(stats, 'utilized_clusters', int)
 
         total_instances_obj = specs.findall('instances')[0].findall('t_')
-        if len(total_instances_obj) == 0:            
+        if len(total_instances_obj) == 0:
             total_instances = sum(instances)
         else:
             total_instances = int(total_instances_obj[0].text)
@@ -119,11 +136,11 @@ def parse_timeloop_stats(filename):
             total_capacity = sum(utilized_capacity)
         else:
             total_capacity = int(total_capacity_obj[0].text)
-        
-        energy_per_access_per_instance = get_stat(stats, 'energy_per_access', float) 
+
+        energy_per_access_per_instance = get_stat(stats, 'energy_per_access', float)
         storage_access_energy_in_pJ = energy_per_access_per_instance * accesses_per_instance * instances
         read_energy = energy_per_access_per_instance * reads_per_instance * instances
-        
+
         # Find read-network connected to this storage level by looking at the first word
         # in the network's name.
         # FIXME: all this ugliness is because of legacy topology structure. We should
@@ -137,7 +154,7 @@ def parse_timeloop_stats(filename):
                 break
         #network_ptr = network_ptrs[level_id-1]
         #network = network_ptr.findall('second')[0].findall('px')[0]
-                    
+
         # Network energy
         # network = level.findall('network_')[0]
         network_stats = network.findall('stats_')[0]
@@ -148,14 +165,14 @@ def parse_timeloop_stats(filename):
         ingresses = get_stat(network_stats, 'ingresses', int)
         network_energy_per_instance_pJ = get_stat(network_stats, 'energy', float)
         network_energy_in_pJ = network_energy_per_instance_pJ * instances
-       
+
         # Add multicast factors
         multicast = get_stat(network_stats, 'multicast_factor', int)
         dist_multicast = get_stat(network_stats, 'distributed_multicast', int)
 
         # Add energy
-        spatial_add_energy_per_instance = get_stat(network_stats, 'spatial_reduction_energy', float) 
-        temporal_add_energy_per_instance = get_stat(stats, 'temporal_reduction_energy', float) 
+        spatial_add_energy_per_instance = get_stat(network_stats, 'spatial_reduction_energy', float)
+        temporal_add_energy_per_instance = get_stat(stats, 'temporal_reduction_energy', float)
         temporal_add_energy = np.nansum(temporal_add_energy_per_instance * instances)
         spatial_add_energy = np.nansum(spatial_add_energy_per_instance * instances)
 
@@ -189,7 +206,7 @@ def parse_timeloop_stats(filename):
             'num_hops': num_hops,\
             'ingresses': ingresses,\
             'energy_per_hop_per_instance': energy_per_hop_per_instance}
- 
+
     energy_pJ =  sum([value['energy'] for key, value in energy_breakdown_pJ.items()])
 
     # Crude check to find out if timeloop produced an output.
@@ -207,6 +224,8 @@ def parse_timeloop_stats(filename):
         output = {}
 
     return output
+
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -228,4 +247,8 @@ def main():
     print('Wrote output to %s.' % (outfile.name))
 
 if __name__ == '__main__':
-    main()
+    # main()
+    file_path = '/home/felix/Documents/my_code/gamma_timeloop/gamma_timeloop_src/report/timeloop-model.map+stats.xml'
+    filename =  '/home/felix/Documents/my_code/gamma_timeloop/gamma_timeloop_src/report/timeloop-model.stats.txt'
+    # parse_timeloop_stats(file_path)
+    get_perf(filename)

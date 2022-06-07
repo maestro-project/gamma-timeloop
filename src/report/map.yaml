@@ -1,57 +1,38 @@
 mapping:
-- factors: N=1 M=1 C=1 P=1 Q=1 R=3 S=1
-  permutation: RPSQCNM
+- factors: N=8 M=1 C=1 P=7 Q=1 R=3 S=1
+  permutation: SPRCQNM
   target: RegisterFile
   type: temporal
-- factors: N=1 M=1 C=1 P=1 Q=2 R=1 S=1
-  permutation: RPSQCNM
+- factors: N=1 M=1 C=2 P=1 Q=1 R=1 S=1
+  permutation: SPRCQNM
   target: RegisterFile
   type: spatial
-- bypass:
+- bypass: []
+  keep:
   - Inputs
   - Weights
   - Outputs
-  keep: []
   target: RegisterFile
   type: bypass
-- factors: N=1 M=1 C=1 P=1 Q=1 R=1 S=3
-  permutation: SNCRQMP
+- factors: N=1 M=1 C=1 P=4 Q=4 R=1 S=3
+  permutation: SCRMNQP
   target: GlobalBuffer
   type: temporal
 - factors: N=1 M=1 C=12 P=1 Q=1 R=1 S=1
-  permutation: SNCRQMP
+  permutation: SCRMNQP
   target: GlobalBuffer
   type: spatial
-- bypass:
-  - Weights
-  - Outputs
+- bypass: []
   keep:
   - Inputs
+  - Weights
+  - Outputs
   target: GlobalBuffer
   type: bypass
-- factors: N=1 M=1 C=1 P=1 Q=1 R=1 S=1
-  permutation: RQPNMCS
-  target: L3
-  type: temporal
-- factors: N=1 M=1 C=1 P=1 Q=1 R=1 S=1
-  permutation: RQPNMCS
-  target: L3
-  type: spatial
-- bypass:
-  - Inputs
-  keep:
-  - Weights
-  - Outputs
-  target: L3
-  type: bypass
-- factors: N=16 M=1 C=12 P=56 Q=28 R=1 S=1
-  permutation: RPMCSNQ
+- factors: N=2 M=1 C=6 P=2 Q=14 R=1 S=1
+  permutation: QCMNSPR
   target: MainMemory
   type: temporal
-- factors: N=1 M=1 C=1 P=1 Q=1 R=1 S=1
-  permutation: RPMCSNQ
-  target: MainMemory
-  type: spatial
 - bypass: []
   keep:
   - Inputs

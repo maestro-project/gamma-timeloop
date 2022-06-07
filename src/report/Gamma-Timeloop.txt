@@ -1,1 +1,4 @@
-Achieved Fitness: ['-1.92336e+03']
+Achieved Fitness: ['-1.84514e+03']
+Statistics
+['EDP (uJ cycles)', 'Cycles', 'Energy (uJ)', 'Utilization', 'pJ/Algorithm-Compute', 'pJ/Actual-Compute', 'Area (mm2)']
+[2499712878.4280305, 1354752, 1845.1442614058, 0.0234375, 28.374569992112335, 56.74913998422467, 1.984403875]

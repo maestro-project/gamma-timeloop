@@ -1,0 +1,460 @@
+sparse_optimizations:
+  targets:
+  - action-optimization:
+    - options:
+      - condition-on:
+        - Weights
+        - Outputs
+        target: Inputs
+      type: skipping
+    - options:
+      - condition-on:
+        - Inputs
+        - Outputs
+        target: Weights
+      type: skipping
+    - options:
+      - condition-on:
+        - Weights
+        - Inputs
+        target: Outputs
+      type: skipping
+    name: MainMemory
+    representation-format:
+      data-spaces:
+      - name: Weights
+        rank-application-order: inner-to-outer
+        ranks:
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: CP
+      - name: Inputs
+        rank-application-order: inner-to-outer
+        ranks:
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: CP
+      - name: Outputs
+        rank-application-order: inner-to-outer
+        ranks:
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: CP
+  - action-optimization:
+    - options:
+      - condition-on:
+        - Weights
+        - Outputs
+        target: Inputs
+      type: skipping
+    - options:
+      - condition-on:
+        - Inputs
+        - Outputs
+        target: Weights
+      type: skipping
+    - options:
+      - condition-on:
+        - Weights
+        - Inputs
+        target: Outputs
+      type: skipping
+    name: GlobalBuffer
+    representation-format:
+      data-spaces:
+      - name: Weights
+        rank-application-order: inner-to-outer
+        ranks:
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: CP
+      - name: Inputs
+        rank-application-order: inner-to-outer
+        ranks:
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: CP
+      - name: Outputs
+        rank-application-order: inner-to-outer
+        ranks:
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: CP
+  - action-optimization:
+    - options:
+      - condition-on:
+        - Weights
+        - Outputs
+        target: Inputs
+      type: skipping
+    - options:
+      - condition-on:
+        - Inputs
+        - Outputs
+        target: Weights
+      type: skipping
+    - options:
+      - condition-on:
+        - Weights
+        - Inputs
+        target: Outputs
+      type: skipping
+    name: RegisterFile
+    representation-format:
+      data-spaces:
+      - name: Weights
+        rank-application-order: inner-to-outer
+        ranks:
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: CP
+      - name: Inputs
+        rank-application-order: inner-to-outer
+        ranks:
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: CP
+      - name: Outputs
+        rank-application-order: inner-to-outer
+        ranks:
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: UOP
+        - format: CP
+  - compute-optimization:
+    - type: skipping
+    name: MACC

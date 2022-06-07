@@ -11,18 +11,16 @@ from pytimeloop import ConfigDict
 from utils import *
 import re
 class TimeloopEnv(object):
-    def __init__(self, config_path='./out_config', in_arch_file='./in_config/arch.yaml', in_problem_file='./in_config/problem.yaml',
-                 in_sparse_file='./in_config/sprase.yaml',
-                debug=False, use_sparse=False, density=None):
+    def __init__(self, config_path='./out_config', in_config_dir= './in_config', debug=False, use_sparse=False, density=None):
 
         self.config_path = config_path
         self.use_sparse = use_sparse
-        with open(in_arch_file, 'r') as fd:
+        with open(os.path.join(in_config_dir, 'arch.yaml'), 'r') as fd:
             self.arch = yaml.load(fd, Loader = yaml.SafeLoader)
-        with open(in_problem_file, 'r') as fd:
+        with open(os.path.join(in_config_dir, 'problem.yaml'), 'r') as fd:
             self.problem = yaml.load(fd,Loader = yaml.SafeLoader)
         if self.use_sparse:
-            with open(in_sparse_file, 'r') as fd:
+            with open(os.path.join(in_config_dir, 'sparse.yaml'), 'r') as fd:
                 self.sparse = yaml.load(fd,Loader = yaml.SafeLoader)
 
         buffer_name_list, buffer_size_list, buffer_spmap_cstr, user_specified_spmaps, num_buffer_levels, num_pes = self.get_buffer_info()
@@ -35,8 +33,16 @@ class TimeloopEnv(object):
         self.num_pes = num_pes
         self._executable = 'timeloop-model'
         self.debug = debug
+        self.buf_energy_cost = self.get_default_buffer_energy_cost()
         self.density = density
 
+    def get_default_buffer_energy_cost(self):
+        buf_energy_cost = {'DRAM': 200,
+                           'l2': 2.2,
+                           'l1': 1.12,
+                           'MAC': 1.0,
+        }
+        return buf_energy_cost
 
     def get_num_buffer_levels(self):
         return self.num_buffer_level
@@ -158,7 +164,7 @@ class TimeloopEnv(object):
     def create_pool_env(self, num_pools, dimension, indv, use_IO=False):
         os.makedirs(self.config_path, exist_ok=True)
         if use_IO:
-            arch_paths, problem_paths, map_paths, pool_paths = [], [], [], []
+            arch_paths, problem_paths, map_paths, sparse_paths, pool_paths = [], [], [], [], []
             for i in range(num_pools):
                 pool_dir = os.path.join(self.config_path, f'pool-{i}')
                 os.makedirs(pool_dir, exist_ok=True)
@@ -166,7 +172,8 @@ class TimeloopEnv(object):
                 arch_paths.append(os.path.abspath(os.path.join(pool_dir, 'arch.yaml')))
                 problem_paths.append(os.path.abspath(os.path.join(pool_dir, 'problem.yaml')))
                 map_paths.append(os.path.abspath(os.path.join(pool_dir, 'map.yaml')))
-            self.arch_path, self.problem_path, self.map_path, self.pool_path =  arch_paths, problem_paths, map_paths, pool_paths
+                sparse_paths.append(os.path.abspath(os.path.join(pool_dir, 'sparse.yaml')))
+            self.arch_path, self.problem_path, self.map_path, self.sparse_path, self.pool_path =  arch_paths, problem_paths, map_paths, sparse_paths, pool_paths
         else:
             arch, problem, map = self.get_configs(dimension, indv)
             cfg = {}
@@ -175,6 +182,7 @@ class TimeloopEnv(object):
             cfg.update(problem)
             if self.use_sparse:
                 cfg.update(self.sparse)
+                # cfg.update({'sparse_optimizations': self.sparse})
             config = ConfigDict(cfg)
             with stdout_redirected():
                 timeloop_app = Model(config, self.config_path)
@@ -196,19 +204,22 @@ class TimeloopEnv(object):
         arch['architecture']['subtree'][0]['subtree'][0]['subtree'][0]['local'][1]['name']=f'MACC[0..{num_pes}]'
         return arch
 
+
+
     def get_problem_configs(self, dimension):
         problem =  copy.deepcopy(self.problem)
         dimension_dict = self.get_dimension_dict(dimension)
         for key, value in dimension_dict.items():
             problem['problem']['instance'][self.get_timeloop_notation(key)] = value
         if self.use_sparse:
-            problem['problem']['instance']['density'] = {}
+            problem['problem']['instance']['densities'] = {}
             for key in ['Inputs', 'Weights', 'Outputs']:
                 cur_density = self.density[key]
                 if cur_density < 1:
-                    problem['problem']['instance']['density'][key] = {}
-                    problem['problem']['instance']['density'][key]['distribution'] = 'fixed-structured'
-                    problem['problem']['instance']['density'][key]['density'] = cur_density
+                    problem['problem']['instance']['densities'][key] = {}
+                    problem['problem']['instance']['densities'][key]['distribution'] = 'fixed-structured'
+                    # problem['problem']['instance']['densities'][key]['distribution'] = 'hypergeometric'
+                    problem['problem']['instance']['densities'][key]['density'] = cur_density
         return problem
 
     def get_prod(self, dicts):
@@ -226,6 +237,29 @@ class TimeloopEnv(object):
         N, K, C, Y, X, R, S = tiles
         input_tile, weight_tile, output_tile = N*(Y+R-1)*(X+S-1)*C, K*R*S*C, Y*X*K*N
         return input_tile, weight_tile, output_tile
+
+    def get_ideal_perf(self, dimension):
+        N, K, C, Y, X, R, S = dimension
+        input_size, weight_size, output_size = [N*Y*X*C, R*S*C*K, N*Y*X*K] # Input, weight, output
+        num_flops = N*R*S*C*Y*X*K
+        energys = {}
+        for level in range(1, self.num_buffer_level+1):
+            if level == 1:
+                buf_energy_cost = self.buf_energy_cost['l1']
+            elif level == self.num_buffer_level:
+                buf_energy_cost = self.buf_energy_cost['DRAM']
+            else:
+                buf_energy_cost = self.buf_energy_cost['l2']
+            energys[f'l{level}-Inputs'] = input_size * buf_energy_cost
+            energys[f'l{level}-Weights'] = weight_size * buf_energy_cost
+            energys[f'l{level}-Outputs'] = output_size * buf_energy_cost
+        energys['compute'] = num_flops * self.buf_energy_cost['MAC']
+        energy = sum(e for e in energys.values()) * 1e-6  # energy_uJ
+        # cycles = num_flops/self.num_pes
+        cycles = num_flops/(self.num_pes-1)
+        edp = cycles * energy
+        return edp, cycles, energy
+
 
     def check_tile_fit_buffer(self, indv):
         len_dim = len('NKCYXRS')
@@ -265,6 +299,37 @@ class TimeloopEnv(object):
                                 'Weights': weight_tile,
                                 'Outputs':output_tile,
                                 'Total':total_tile}
+            # total_tile = 0
+            # total_tile += input_tile if indv[f'l{level}']['bypass']['Inputs'] is False else 0
+            # total_tile += weight_tile if indv[f'l{level}']['bypass']['Weights'] is False else 0
+            # total_tile += output_tile if indv[f'l{level}']['bypass']['Outputs'] is False else 0
+            # # total_tile = input_tile + weight_tile + output_tile
+            # # print(f'Level-{level}: {total_tile}, {self.buffer_size_list[f"l{level}"]}')
+            # ret[f'l{level}'] = total_tile
+        return ret
+
+
+    def check_tile_fit_buffer_temp(self, indv):
+
+        len_dim = len('NKCYXRS')
+        tile_prods = {}
+        tile_prod = np.ones((len_dim,))
+        for level in range(1, self.num_buffer_level+1):
+            tile_sizes = {dim_note:self.get_prod(values) for dim_note, values in indv[f'l{level}']['tile_size'].items()}
+            par_dims = indv[f'l{level}']['par_dims']
+            tp_tile_sizes, sp_tile_sizes = self.get_tp_sp_tile_size(tile_sizes, par_dims, timeloop_notation=False)
+            tile_prod = (tile_prod * tp_tile_sizes * sp_tile_sizes)
+            tile_prods[f'l{level}'] = tile_prod
+        ret = {}
+        for level in range(1, self.num_buffer_level+1):
+            input_tile, weight_tile, output_tile = self.get_input_weight_output_tile(tile_prods[f'l{level}'])
+            total_tile = 0
+            total_tile += input_tile if indv[f'l{level}']['bypass']['Inputs'] is False else 0
+            total_tile += weight_tile if indv[f'l{level}']['bypass']['Weights'] is False else 0
+            total_tile += output_tile if indv[f'l{level}']['bypass']['Outputs'] is False else 0
+            # total_tile = input_tile + weight_tile + output_tile
+            # print(f'Level-{level}: {total_tile}, {self.buffer_size_list[f"l{level}"]}')
+            ret[f'l{level}'] = total_tile
         return ret
 
 
@@ -282,6 +347,7 @@ class TimeloopEnv(object):
                           'keep': to_keep,
                           'bypass': to_pass
                         }
+            # if 1<level<self.num_buffer_level:
             tp_tile_sizes, sp_tile_sizes = self.get_tp_sp_tile_size(tile_sizes, par_dims)
             cur_map = {'target': target,
                        'type': 'temporal',
@@ -297,7 +363,17 @@ class TimeloopEnv(object):
                            }
                 mapping.append(cur_map)
             mapping.append(bypass_map)
+            # else:
+            #     tp_tile_sizes = self.get_tp_tile_size(tile_sizes)
+            #     cur_map = {'target': target,
+            #                'type': 'temporal',
+            #                'factors': tp_tile_sizes,
+            #                'permutation': permutation,
+            #                }
+            #     mapping.append(cur_map)
         return {'mapping': mapping}
+
+
 
 
     def get_configs(self, dimension,  indv,):
@@ -329,8 +405,10 @@ class TimeloopEnv(object):
         arch, problem, map = self.get_configs(dimension, indv)
         if use_IO:
             self.write_config(arch, problem, map, arch_path=self.arch_path[pool_idx],
-                              problem_path=self.problem_path[pool_idx], map_path=self.map_path[pool_idx],)
+                              problem_path=self.problem_path[pool_idx], map_path=self.map_path[pool_idx], sparse_path=self.sparse_path[pool_idx])
             command = [self._executable, self.arch_path[pool_idx], self.problem_path[pool_idx], self.map_path[pool_idx]]
+            if self.use_sparse:
+                command += [self.sparse_path[pool_idx]]
             process = Popen(command, stdout=PIPE, stderr=PIPE, cwd=self.pool_path[pool_idx])
             stdout, stderr = process.communicate()
             process.wait()
@@ -338,12 +416,19 @@ class TimeloopEnv(object):
                 return [-float('Inf')] * len(fitness_obj)
             else:
                 try:
-                    stats = parse_timeloop_stats(self.pool_path[pool_idx])
+                    # stats = parse_timeloop_stats(self.pool_path[pool_idx])
+                    stats = extract_timeloop_perf(self.pool_path[pool_idx])
                     fitness = self.judge_IO(stats, fitness_obj)
                 except:
                     fitness = [-float('Inf')] * len(fitness_obj)
                 return fitness
         else:
+            # cfg = {}
+            # cfg.update(arch)
+            # cfg.update(map)
+            # cfg.update(problem)
+            # cfg.update(self.art)
+            # cfg.update(self.ert)
             cfg = copy.deepcopy(self.shared_cfg)
             cfg.update(map)
             config = ConfigDict(cfg)
@@ -365,8 +450,9 @@ class TimeloopEnv(object):
             return fitness
 
 
-
-    def judge_IO(self, stats, fitness_obj):
+    def judge_IO(self, stats, fitness_obj='all'):
+        if fitness_obj == 'all':
+            fitness_obj = ['edp', 'latency', 'energy', 'utilization']
         ret = []
         for f in fitness_obj:
             if f == 'edp':
@@ -379,8 +465,9 @@ class TimeloopEnv(object):
                 ret.append(-stats['energy_pJ'] * 1E-6) # energy_uJ
         return ret
 
-
-    def judge(self, stats, fitness_obj):
+    def judge(self, stats, fitness_obj='all'):
+        if fitness_obj == 'all':
+            return self.get_stats(stats)
         ret = []
         for f in fitness_obj:
             if f == 'edp':
@@ -395,6 +482,9 @@ class TimeloopEnv(object):
                 ret.append(-stats.energy * 1E-6) # energy_uJ
         return ret
 
+    def get_stats(self, stats):
+        return [stats.cycles * stats.energy * 1E-6, stats.cycles, stats.energy * 1E-6, stats.utilization, stats.energy/stats.algorithmic_compute, stats.energy/stats.actual_compute, stats.area * 1E-6]
+
 if __name__ == '__main__':
     l2_size = 2**14
     l1_size = 2**12
@@ -407,6 +497,8 @@ if __name__ == '__main__':
     l1_loop_order = 'YXKCRS'
     par_dims = 'KC'
     config_path = '/home/felix/Documents/my_code/timeloop-accelergy-exercises/workspace/exercises/2020.ispass/timeloop/04-model-conv1d+oc-3levelspatial/config'
+    # timeloop = TimeloopEnv(config_path)
+    # timeloop.create_timeloop_config(dimension, l2_size, l1_size, num_pes, l2_tile_size, l1_tile_size, l2_loop_order, l1_loop_order, par_dims)
     timeloop = TimeloopEnv()
     timeloop.create_timeloop_config(dimension, l2_size, l1_size, num_pes, l2_tile_size, l1_tile_size, l2_loop_order, l1_loop_order, par_dims)
     timeloop.run_timeloop()
