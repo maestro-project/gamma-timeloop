@@ -1,6 +1,12 @@
 # GAMMA-TimeLoop #
 This is the implementation of the mapper [GAMMA](https://cpb-us-w2.wpmucdn.com/sites.gatech.edu/dist/c/332/files/2020/08/gamma_iccad2020.pdf) for Timeloop.
 
+Gamma-Timeloop searches through the design space of Timloop and proposes an optimized mapping.
+
+### Sister Repo: Gamma-Maestro
+We also have GAMMA supporting MAESTRO as cost model. The sister repo can be found here [Gamma-Maestro](https://github.com/maestro-project/gamma). It searches through the design space of MAESTRO and proposes an optimized mapping.
+
+-----
 
 ### Setup Timeloop ###
 Install and set up Timeloop. For more setup detail, please follow the setup user guide in [Timeloop](https://github.com/NVlabs/timeloop/blob/master/README.md).
