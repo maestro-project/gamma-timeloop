@@ -1,4 +1,4 @@
-# GAMMA-TimeLoop #
+# GAMMA-Timeloop #
 This is the implementation of the mapper [GAMMA](https://cpb-us-w2.wpmucdn.com/sites.gatech.edu/dist/c/332/files/2020/08/gamma_iccad2020.pdf) for Timeloop.
 
 Gamma-Timeloop searches through the design space of Timloop and proposes an optimized mapping.
