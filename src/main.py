@@ -9,10 +9,10 @@ if __name__ == '__main__':
     parser.add_argument('--num_pops', type=int, default=5,help='number of populations')
     parser.add_argument('--epochs', type=int, default=5, help='number of generations/epochs')
     parser.add_argument('--config_path', type=str, default='./in_config',
-                        help='Configuration path, should include arch.yaml and optionally problem.yaml')
+                        help='Configuration path, should include arch.yaml, problem.yaml, (and sparse.yaml if sparsity is considered)')
     parser.add_argument('--report_dir', type=str, default='report', help='The report directory')
-    parser.add_argument('--density', type=str, default='0.5,1,1', help='The density of Input, Output, Weight Tenor.')
-    parser.add_argument('--save_chkpt', action='store_true', default=False)
+    parser.add_argument('--density', type=str, default='0.5,1,1', help='The density of Input, Output, Weight Tenor')
+    parser.add_argument('--save_chkpt', action='store_true', default=False, help='Create a checkpoint when finished')
     parser.add_argument('--use_sparse', action='store_true', default=False, help='Execute Map Space Exploration on sparse accelerator')
     parser.add_argument('--explore_bypass', action='store_true', default=False,
                         help='Enable it can add bypass buffer option in to the search space')

@@ -1,2 +1,2 @@
-,EDP (uJ cycles),Cycles,Energy (uJ),Utilization,pJ/Algorithm-Compute,pJ/Actual-Compute,Area (mm2)
-0,2499712878.4280305,1354752.0,1845.1442614058,0.0234375,28.374569992112335,56.74913998422467,1.984403875
+,EDP (uJ cycles),Cycles,Energy (uJ)
+0,-inf,-inf,-inf

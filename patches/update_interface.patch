@@ -1,0 +1,201 @@
+From b5eb9c6d9817f5dd69bca9f981ffd061e44b0e33 Mon Sep 17 00:00:00 2001
+From: felix <felix@gatech.edu>
+Date: Tue, 7 Jun 2022 15:37:40 -0400
+Subject: [PATCH] Interface update on Model.py
+
+---
+ pytimeloop/app/model.py | 59 ++++++++++++++++++++++---------------
+ pytimeloop/model.py     | 65 ++++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 96 insertions(+), 28 deletions(-)
+
+diff --git a/pytimeloop/app/model.py b/pytimeloop/app/model.py
+index 01b5b11..e580023 100644
+--- a/pytimeloop/app/model.py
++++ b/pytimeloop/app/model.py
+@@ -4,49 +4,52 @@ from pytimeloop.engine import Accelerator
+ from pytimeloop.model import ArchSpecs, SparseOptimizationInfo
+ from pytimeloop.mapping import ArchConstraints, Mapping
+ from pytimeloop.problem import Workload
+-
++import os
+ import logging
+ 
+ 
++
++
++
++
+ class Model:
+-    def __init__(self, cfg: Config, out_dir: str, auto_bypass_on_failure=False,
+-                 out_prefix='', log_level=logging.INFO):
++    def __init__(self, cfg: Config, out_dir: str='.', auto_bypass_on_failure=False,
++                 out_prefix='', log_level=logging.WARNING, dump_file=True ):
+         # Setup logger
+         self.log_level = log_level
+         self.model_logger = logging.getLogger('pytimeloop.app.Model')
+         self.model_logger.setLevel(log_level)
+ 
+-        # timeloop-model configurations
+-        self.auto_bypass_on_failure = auto_bypass_on_failure
+-        self.out_prefix = out_prefix
+         semi_qualified_prefix = 'timeloop-model'
+-        self.out_prefix = out_dir + '/' + semi_qualified_prefix
+-
++        semi_qualified_prefix = semi_qualified_prefix + out_prefix
++        out_prefix = os.path.join(out_dir, semi_qualified_prefix)
+         # Architecture configuration
+         self.arch_specs = ArchSpecs(cfg['architecture'])
+-        self.arch_specs.generate_tables(
+-            cfg, semi_qualified_prefix, out_dir, self.out_prefix, log_level)
++        if dump_file:
++            self.arch_specs.generate_tables(
++                cfg, semi_qualified_prefix, out_dir, out_prefix, self.log_level)
++
+ 
+         # Problem configuration
+         self.workload = Workload(cfg['problem'])
+         self.model_logger.info('Problem configuration complete.')
+ 
+-        self.arch_props = ArchProperties(self.arch_specs)
++        # self.arch_props = ArchProperties(self.arch_specs)
+ 
+         # Architecture constraints
+-        self.constraints = ArchConstraints(
+-            self.arch_props, self.workload, cfg['architecture_constraints'])
+-        self.model_logger.info('Architecture configuration complete.')
++        # self.constraints = ArchConstraints(
++        #     self.arch_props, self.workload, cfg['architecture_constraints'])
++        # self.model_logger.info('Architecture configuration complete.')
+ 
+         # Mapping configuration
+         self.mapping = Mapping(cfg['mapping'], self.arch_specs, self.workload)
+         self.model_logger.info('Mapping construction complete.')
+ 
+         # Validate mapping against architecture constraints
+-        if not self.constraints.satisfied_by(self.mapping):
+-            self.model_logger.error(
+-                'Mapping violates architecture constraints.')
+-            raise ValueError('Mapping violates architecture constraints.')
++        # if not self.constraints.satisfied_by(self.mapping):
++        #     self.model_logger.error(
++        #         'Mapping violates architecture constraints.')
++        #     raise ValueError('Mapping violates architecture constraints.')
+ 
+         # Sparse optimizations
+         if 'sparse_optimizations' in cfg:
+@@ -56,11 +59,19 @@ class Model:
+         self.sparse_optimizations = SparseOptimizationInfo(
+             sparse_opt_cfg, self.arch_specs)
+ 
++
++
+     def run(self):
+-        engine = Accelerator(self.arch_specs)
++        try:
++            engine = Accelerator(self.arch_specs)
++
++            eval_stat = engine.evaluate(self.mapping,
++                                        self.workload,
++                                        self.sparse_optimizations,
++                                        log_level=self.log_level)
++            return eval_stat
++        except:
++            return None
++
++
+ 
+-        eval_stat = engine.evaluate(self.mapping,
+-                                    self.workload,
+-                                    self.sparse_optimizations,
+-                                    log_level=self.log_level)
+-        return eval_stat
+diff --git a/pytimeloop/model.py b/pytimeloop/model.py
+index f4cfa6a..f8e759b 100644
+--- a/pytimeloop/model.py
++++ b/pytimeloop/model.py
+@@ -21,17 +21,17 @@ class ArchSpecs(NativeArchSpecs):
+         root_node = native_root_cfg.get_root()
+         if 'ERT' in root_node:
+             logger.info('Found Accelergy ERT, replacing internal energy model')
+-            self.parse_accelergy_ert(root_node['ert'])
++            self.parse_accelergy_ert(root_node['ERT'])
+             if 'ART' in root_node:
+                 logger.info(
+                     'Found Accelergy ART, replacing internal area model')
+-                self.parse_accelergy_art(root_node['art'])
++                self.parse_accelergy_art(root_node['ART'])
+         else:
+             _, native_arch_cfg = config['architecture'].get_native()
+             if 'subtree' in native_arch_cfg or 'local' in native_arch_cfg:
+-                with open('tmp-accelergy.yaml', 'w+') as f:
++                with open(f'{semi_qualified_prefix}-tmp-accelergy.yaml', 'w+') as f:
+                     f.write(config.dump_yaml())
+-                invoke_accelergy(['tmp-accelergy.yaml'],
++                invoke_accelergy([f'{semi_qualified_prefix}-tmp-accelergy.yaml'],
+                                  semi_qualified_prefix, out_dir)
+                 ert_path = out_prefix + '.ERT.yaml'
+                 # Have to store config in a variable, so it doesn't get
+@@ -54,3 +54,60 @@ class SparseOptimizationInfo(NativeSparseOptimizationInfo):
+     def __init__(self, sparse_config: Config, arch_specs: ArchSpecs):
+         _, native_sparse_config_node = sparse_config.get_native()
+         super().__init__(native_sparse_config_node, arch_specs)
++from bindings import (NativeArchSpecs, NativeConfig,
++                      NativeSparseOptimizationInfo)
++from .accelergy_interface import invoke_accelergy
++from .config import Config
++
++import logging
++
++
++class ArchSpecs(NativeArchSpecs):
++    def __init__(self, config: Config):
++        _, native_arch_node = config.get_native()
++        super().__init__(native_arch_node)
++
++    def generate_tables(self, config: Config, semi_qualified_prefix, out_dir,
++                        out_prefix, log_level=logging.INFO):
++        # Setup logger
++        logger = logging.getLogger(__name__ + '.' + __class__.__name__)
++        logger.setLevel(log_level)
++
++        native_root_cfg, native_cfg = config.get_native()
++        root_node = native_root_cfg.get_root()
++        if 'ERT' in root_node:
++            logger.info('Found Accelergy ERT, replacing internal energy model')
++            self.parse_accelergy_ert(root_node['ERT'])
++            if 'ART' in root_node:
++                logger.info(
++                    'Found Accelergy ART, replacing internal area model')
++                self.parse_accelergy_art(root_node['ART'])
++        else:
++            _, native_arch_cfg = config['architecture'].get_native()
++            if 'subtree' in native_arch_cfg or 'local' in native_arch_cfg:
++                with open(f'{semi_qualified_prefix}-tmp-accelergy.yaml', 'w+') as f:
++                    f.write(config.dump_yaml())
++                invoke_accelergy([f'{semi_qualified_prefix}-tmp-accelergy.yaml'],
++                                 semi_qualified_prefix, out_dir)
++                ert_path = out_prefix + '.ERT.yaml'
++                # Have to store config in a variable, so it doesn't get
++                # garbage collected. CompoundConfigNode referes to it.
++                ert_cfg = NativeConfig(ert_path)
++                ert = ert_cfg.get_root().lookup('ERT')
++                logger.info('Generated Accelergy ERT to replace internal '
++                            'energy model')
++                self.parse_accelergy_ert(ert)
++
++                art_path = out_prefix + '.ART.yaml'
++                art_cfg = NativeConfig(art_path)
++                art = art_cfg.get_root()['ART']
++                logger.info('Generated Accelergy ART to replace internal '
++                            'energy model')
++                self.parse_accelergy_art(art)
++
++
++class SparseOptimizationInfo(NativeSparseOptimizationInfo):
++    def __init__(self, sparse_config: Config, arch_specs: ArchSpecs):
++        _, native_sparse_config_node = sparse_config.get_native()
++        super().__init__(native_sparse_config_node, arch_specs)
++
+-- 
+2.17.1
+

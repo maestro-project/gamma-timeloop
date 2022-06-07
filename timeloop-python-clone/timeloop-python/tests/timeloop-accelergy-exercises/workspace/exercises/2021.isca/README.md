@@ -1,1 +1,0 @@
-## Please navigate to `notebooks` to try out exercises
