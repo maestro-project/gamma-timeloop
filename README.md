@@ -42,19 +42,3 @@ For more detail, please look at [``./src``](./src)
 }
 
 ```
-```
-@inproceedings{digamma,
-title={DiGamma: Domain-aware Genetic Algorithm for HW-Mapping Co-optimization for DNN Accelerators},
-author={Kao, Sheng-Chun and Pellauer, Michael and Parashar, Angshuman and Krishna, Tushar},
-booktitle     = {DATE},
-year={2022}
-}
-```
-```
-@inproceedings{kao2022formalism,
-  title={A Formalism of DNN Accelerator Flexibility},
-  author={Kao, Sheng-Chun and Kwon, Hyoukjun and Pellauer, Michael and Parashar, Angshuman and Krishna, Tushar},
-  booktitle={Proceedings of the 2022 ACM SIGMETRICS/IFIP PERFORMANCE Joint International Conference on Measurement and Modeling of Computer Systems},
-  year={2022}
-}
-```
