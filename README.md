@@ -34,6 +34,17 @@ For more detail, please look at [``./src``](./src)
 
 ## Citation ##
 ```
+@inproceedings{gamma_timeloop,
+    author       = {Kao, Sheng-Chun and Parashar, Angshuman and Tsai Po-An and Krishna, Tushar},
+    title        = {Demystifying Map Space Exploration for NPUs},
+    booktitle     = {IISWC},
+  year          = {2022}
+}
+
+```
+
+
+```
 @inproceedings{gamma,
     author       = {Kao, Sheng-Chun and Krishna, Tushar},
     title        = {GAMMA: Automating the HW Mapping of DNN Models on Accelerators via Genetic Algorithm},
