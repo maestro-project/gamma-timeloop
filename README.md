@@ -1,5 +1,8 @@
 # GAMMA-TimeLoop #
-This is the implementation of the mapper [GAMMA](https://dl.acm.org/doi/10.1145/3400302.3415639) for Timeloop.
+This is the implementation of the mapper [GAMMA](https://dl.acm.org/doi/10.1145/3400302.3415639) using Timeloop as cost model.
+
+GAMMA-Timeloop searches through the design space modeled by Timeloop and proposes an optimized mapping. It was introduced in this IISWC 2022 [paper](https://arxiv.org/pdf/2210.03731.pdf) and [talk](https://synergy.ece.gatech.edu/files/2022/11/IISWC2022Demysitifying_MSE_talk-final.pdf).
+
 ![GAMMA Framework](./gamma.jpg)
 
 ### Sister Repo: Gamma-Maestro ###
